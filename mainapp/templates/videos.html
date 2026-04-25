@@ -1,0 +1,416 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BJJ Training Library</title>
+
+<link rel="icon" href="{% static 'favicon.ico' %}">
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: linear-gradient(135deg, #0f172a, #1e293b);
+  color: white;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  padding: 15px;
+}
+
+.wrapper {
+  width: 100%;
+  max-width: 600px;
+}
+
+/* Card */
+.card {
+  background: #020617;
+  border-radius: 16px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+/* Title */
+.category-title {
+  text-align: center;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+/* Dropdown */
+select {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: #1e293b;
+  color: white;
+  margin-bottom: 10px;
+}
+
+/* Video */
+video {
+  width: 100%;
+  border-radius: 12px;
+}
+
+/* Notes */
+.noteBox {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: #1e293b;
+  color: white;
+  resize: vertical;
+}
+
+.saved-notes {
+  margin-top: 10px;
+}
+
+.saved-note-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #0f172a;
+}
+
+.saved-note-text {
+  font-size: 13px;
+  color: #cbd5e1;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.delete-note-btn {
+  width: auto;
+  margin-top: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: #ef4444;
+  font-size: 12px;
+}
+
+.delete-note-btn:hover {
+  background: #dc2626;
+}
+
+/* Button */
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  border: none;
+  border-radius: 10px;
+  background: #3b82f6;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2563eb;
+}
+
+/* Top bar */
+.topbar {
+  text-align: right;
+  padding: 10px;
+}
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #22c55e;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 14px;
+  opacity: 0;
+  transition: opacity 0.3s ease, bottom 0.3s ease;
+  z-index: 9999;
+}
+
+.toast.show {
+  opacity: 1;
+  bottom: 40px;
+}
+
+.toast.error {
+  background: #ef4444;
+}
+.note-container {
+  position: relative;
+  margin-top: 10px;
+}
+
+.note-icon {
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  font-size: 16px;
+  color: #60a5fa;
+  pointer-events: none; /* click passes through */
+}
+
+.noteBox {
+  width: 100%;
+  padding: 12px 12px 12px 38px;
+  border-radius: 10px;
+  border: none;
+  background: #1e293b;
+  color: white;
+  resize: vertical;
+
+  box-sizing: border-box; /* 🔥 FIX */
+}
+</style>
+</head>
+
+<body>
+<div id="toast" class="toast"></div>
+<div class="topbar">
+  {% if user.is_authenticated %}
+    Welcome, {{ user.username }} |
+    <a href="{% url 'notes' %}" style="color:#60a5fa; margin-right:10px;">Notes</a>
+    <a href="{% url 'logout' %}" style="color:#60a5fa;">Logout</a>
+  {% else %}
+    <a href="{% url 'login' %}" style="color:#60a5fa;">Login</a> |
+    <a href="{% url 'register' %}" style="color:#60a5fa;">Register</a>
+  {% endif %}
+</div>
+
+<div class="container">
+  <div class="wrapper">
+
+    {% for category in categories %}
+    <div class="card"> 
+
+      <div class="category-title">
+        {{ category.name }}
+      </div>
+
+      <!-- DROPDOWN -->
+      <select onchange="playVideo(this)">
+        <option disabled selected>Select a video</option>
+
+        {% for section in category.sections.all %}
+        <optgroup label="{{ section.name }}">
+          {% for video in section.videos.all %}
+          <option value="{{ video.url }}" data-id="{{ video.id }}" data-base-title="{{ video.title|escape }}">
+            {% if video.id in noted_video_ids %}📝 {% endif %}{{ video.title }}
+          </option>
+          {% endfor %}
+        </optgroup>
+        {% endfor %}
+      </select>
+
+      <!-- VIDEO -->
+      <video controls playsinline></video>
+
+      <!-- NOTES -->
+      <div class="note-container">
+  <span class="note-icon">✍️</span>
+  <textarea class="noteBox" placeholder="Write notes..."></textarea>
+</div>
+      <div class="saved-notes"></div>
+
+      <button onclick="saveNote(this)">Save Notes</button>
+
+    </div>
+    {% endfor %}
+
+  </div>
+</div>
+
+<script>
+function playVideo(select) {
+  const selected = select.options[select.selectedIndex];
+
+  const videoUrl = selected.value;
+  const videoId = selected.getAttribute("data-id");
+
+  const card = select.closest(".card");
+  const video = card.querySelector("video");
+
+  video.src = videoUrl;
+  video.play();
+
+  // store video ID
+  card.dataset.videoId = videoId;
+
+  loadNotes(card, videoId);
+}
+
+function saveNote(button) {
+  const card = button.closest(".card");
+  const video = card.querySelector("video");
+  const select = card.querySelector("select");
+  const selected = select.options[select.selectedIndex];
+
+  const textarea = card.querySelector(".noteBox");
+  const content = textarea.value;
+  const videoId = selected?.getAttribute("data-id");
+
+  if (!videoId) {
+    showToast("Please select a video first", true);
+    return;
+  }
+
+  const timestamp = video.currentTime;
+
+  fetch("/save-note/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken")
+    },
+    body: JSON.stringify({
+      video_id: videoId,
+      content: content,
+      timestamp: timestamp
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    const videoTitle = card.querySelector(".title")?.innerText || "Video";
+
+    const formattedTime = formatTime(timestamp);
+
+    showToast(`Saved at ${formattedTime} — ${videoTitle}`);
+    textarea.value = "";
+    loadNotes(card, videoId);
+  })
+  .catch(() => {
+    showToast("Error saving note", true);
+  });
+  navigator.vibrate(50);
+}
+
+function loadNotes(card, videoId) {
+  const notesList = card.querySelector(".saved-notes");
+  const select = card.querySelector("select");
+
+  fetch(`/get-note/${videoId}/`)
+    .then(res => res.json())
+    .then(data => {
+      const notes = Array.isArray(data.notes) ? data.notes : [];
+      setOptionNoted(select, videoId, notes.length > 0);
+
+      if (notes.length === 0) {
+        notesList.innerHTML = "";
+        return;
+      }
+
+      notesList.innerHTML = notes.map(note => `
+        <div class="saved-note-item">
+          <div class="saved-note-text">[${formatTime(note.timestamp || 0)}] ${escapeHtml(note.content)}</div>
+          <button class="delete-note-btn" onclick="deleteNoteFromCard(event, ${note.id}, this)">Delete</button>
+        </div>
+      `).join("");
+    });
+}
+
+function setOptionNoted(select, videoId, hasNotes) {
+  const option = Array.from(select.options).find(
+    opt => opt.getAttribute("data-id") === String(videoId)
+  );
+  if (!option) return;
+
+  const baseTitle = option.dataset.baseTitle || option.textContent.replace(/^📝\s*/, "").trim();
+  option.dataset.baseTitle = baseTitle;
+  option.textContent = hasNotes ? `📝 ${baseTitle}` : baseTitle;
+}
+
+function deleteNoteFromCard(event, noteId, button) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  if (!confirm("Delete this note?")) return;
+
+  fetch("/delete-note/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": getCookie("csrftoken")
+    },
+    body: JSON.stringify({
+      note_id: noteId
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.status === "deleted") {
+      const card = button.closest(".card");
+      const videoId = card.dataset.videoId;
+      if (videoId) loadNotes(card, videoId);
+      showToast("Note deleted");
+    } else {
+      showToast("Delete failed", true);
+    }
+  })
+  .catch(() => {
+    showToast("Error deleting note", true);
+  });
+}
+
+function escapeHtml(text) {
+  const div = document.createElement("div");
+  div.innerText = text;
+  return div.innerHTML;
+}
+// CSRF helper
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+      }
+    }
+  }
+  return cookieValue;
+}
+
+
+function formatTime(seconds) {
+  seconds = Math.floor(seconds);
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function showToast(message) {
+  const toast = document.getElementById("toast");
+
+  toast.innerText = message;
+  toast.classList.add("show");
+
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2500);
+}
+</script>
+
+
+
+
+</body>
+</html>
