@@ -15,6 +15,22 @@ db.sqlite3
 env/
 venv/
 
+
+__pycache__/
+*.pyc
+*.sqlite3
+db.sqlite3
+.env
+
+# media / static (if large)
+media/
+staticfiles/
+
+# optional
+*.mp4
+*.mov
+*.zip
+
 # OS files
 .DS_Store
 Thumbs.db
