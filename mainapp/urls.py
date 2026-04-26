@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from .api_views import CategoryViewSet, NoteViewSet, VideoViewSet
-from .views import register_view, login_view, logout_view, video_dropdown, save_note, get_note, notes_list, delete_note
+from .views import register_view, VideoList,login_view, logout_view, video_dropdown, save_note, get_note, notes_list, delete_note
 
 router = DefaultRouter()
 router.register("categories", CategoryViewSet, basename="category")
@@ -18,4 +18,5 @@ urlpatterns = [
     path("notes/", notes_list, name="notes"),
     path("delete-note/", delete_note, name="delete_note"),
     path("api/", include(router.urls)),
+    path('api/videos/', VideoList.as_view()),
 ]

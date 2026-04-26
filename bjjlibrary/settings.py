@@ -22,7 +22,7 @@ USE_TZ = True
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+CORS_ALLOW_ALL_ORIGINS = True  # dev only 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
@@ -33,13 +33,14 @@ SECRET_KEY = 'django-insecure-(-au2@_g#pdzaw&g!gzmekva@yptg!0(0_li7e25(7w-qfbac5
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['https://bjjbiblioteca.com', 'bjjbiblioteca.com','illegalbjjvideos.com','72.83.183.174', '127.0.0.1']
+ALLOWED_HOSTS = ['https://bjjbiblioteca.com','*', 'bjjbiblioteca.com','illegalbjjvideos.com','72.83.183.174', '127.0.0.1']
 
 CSRF_TRUSTED_ORIGINS = [
     "https://bjjbiblioteca.com",
     "https://www.illegalbjjvideos.com",
     "https://www.bjjbiblioteca.com",
     "https://illegalbjjvideos.com",
+    "http://localhost:8081",
 ]
 # Application definition
 
@@ -51,7 +52,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
+    'rest_framework', 
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -62,6 +64,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = 'bjjlibrary.urls'
@@ -133,9 +136,9 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
 
-LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "home"
-LOGOUT_REDIRECT_URL = "login"
+# LOGIN_URL = "login"
+# LOGIN_REDIRECT_URL = "home"
+# LOGOUT_REDIRECT_URL = "login"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -144,5 +147,6 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
+        'rest_framework.permissions.AllowAny',
     ],
 }

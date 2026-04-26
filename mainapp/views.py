@@ -9,7 +9,28 @@ import json
 from django.utils import timezone  # <--- Import at the top
 
 
-@login_required
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import AllowAny
+from .models import Video
+
+class VideoList(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        videos = Video.objects.all()
+
+        data = [
+            {
+                "id": v.id,
+                "title": v.title,
+                "url": v.url,
+            }
+            for v in videos
+        ]
+
+        return Response(data)
+     
 def notes_list(request):
     notes = Note.objects.select_related(
         "user",
@@ -20,8 +41,7 @@ def notes_list(request):
     return render(request, "notes.html", {
         "notes": notes
     })
-
-@login_required
+ 
 def save_note(request):
     if request.method == "POST":
         
@@ -48,9 +68,7 @@ def save_note(request):
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from .models import Note
-
-@require_POST
-@login_required
+ 
 def delete_note(request):
     try:
         data = json.loads(request.body.decode("utf-8"))
@@ -69,8 +87,7 @@ def delete_note(request):
     except Exception as e:
         print("ERROR:", e)
         return JsonResponse({"error": "Server error"}, status=500)
-
-@login_required
+ 
 def get_note(request, video_id):
     notes = Note.objects.filter(
         user=request.user,
@@ -95,8 +112,10 @@ def get_note(request, video_id):
         "notes": serialized_notes,
     })
 
-@login_required
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView 
 def video_dropdown(request):
+    permission_classes = [AllowAny]
     categories = Category.objects.prefetch_related("sections__videos")
     noted_video_ids = set(
         Note.objects.filter(user=request.user).values_list("video_id", flat=True)
