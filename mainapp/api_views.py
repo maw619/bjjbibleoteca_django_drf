@@ -15,7 +15,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 class VideoViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Video.objects.select_related("section", "section__category")
     serializer_class = VideoSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 class NoteViewSet(viewsets.ModelViewSet):
